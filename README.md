@@ -4,21 +4,26 @@ An open-source library for checking and analyzing bias in language models, docum
 
 ## Functionalities:
 1) LLM Integration: Easily initialize and evaluate LLMs with minimal configuration.
-Example:'''python
+Example:
+```python
 from biascheck import moducheck
 result = moducheck(data, model=llm, israg=True)
-'''
+```
 2) Automated RAG Pipeline:
 Automatically build a simple Retrieval-Augmented Generation (RAG) pipeline when analyzing documents.
 
 3) Context-Aware Bias Detection:
 Upload custom lists of polarizing terms to adapt the library for local contexts.
-	4.	CLI and Pip Support:
+
+3) CLI and Pip Support:
 Run bias checks via command-line tools or use it as a Python library.
-	5.	Sample Notebooks:
+
+5) Sample Notebooks:
 Tutorials and examples for common use cases.
-	6.	Future-Proof for Multimodal Inputs:
+
+7) Future-Proof for Multimodal Inputs:
 Designed to extend support for image, video, and audio inputs in later versions.
+
 # Classes
 1) docucheck - this will measure bias/polarisation in a pdf/text etc. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
 ```python
