@@ -24,7 +24,7 @@ Tutorials and examples for common use cases.
 7) Future-Proof for Multimodal Inputs:
 Designed to extend support for image, video, and audio inputs in later versions.
 
-# Classes
+## Classes
 1) docucheck - this will measure bias/polarisation in a pdf/text etc. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
 ```python
 biascheck.docucheck(data:Any, document:Optional, terms:Optional)
