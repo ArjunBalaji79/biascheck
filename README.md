@@ -10,8 +10,12 @@ An open source library for checking bias
 6) Currently it will check for language inputs but eventually will be extended for multimodal input
 
 # Classes
-1) documeasure - this will enable a person to measure bias/polarisation in a pdf/text etc. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
+1) documeasure - this will measure bias/polarisation in a pdf/text etc. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
 ```python
-biascheck.documeasure(data:Any, model:Any, document:Optional, terms:Optional)
+biascheck.documeasure(data:Any, document:Optional, terms:Optional)
 ```
 
+2) modumeasure - this will measure bias/polarisation in a model etc. If a person enters a document, it will turn into a simple RAG model, they can further customise it by choosing their own pipeline/retreivers. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
+```python
+biascheck.modumeasure(data:Any, model:Any, document:Optional, terms:Optional, retreiver:Optional, israg=False)
+```
