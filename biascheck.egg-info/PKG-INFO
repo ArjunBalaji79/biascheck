@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: biascheck
+Version: 0.1.0
+Summary: An open-source library for checking bias in documents, models, datasets, and databases.
+Home-page: https://github.com/ArjunBalaji79/biascheck
+Author: Arjun Balaji
+Author-email: arjun.balaji.02@example.com
+Requires-Dist: transformers
+Requires-Dist: torch
+Requires-Dist: faiss-cpu
+Requires-Dist: spacy
+Requires-Dist: pandas
+Requires-Dist: matplotlib
+Requires-Dist: wordcloud
+Requires-Dist: click
