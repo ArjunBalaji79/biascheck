@@ -9,3 +9,8 @@ An open source library for checking bias
 5) there will be some sample notebooks
 6) Currently it will check for language inputs but eventually will be extended for multimodal input
 
+# Classes
+1) documeasure - this will enable a person to measure bias/polarisation in a pdf/text etc. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
+   '''
+   ads
+   '''
