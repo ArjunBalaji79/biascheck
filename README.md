@@ -10,12 +10,22 @@ An open source library for checking bias
 6) Currently it will check for language inputs but eventually will be extended for multimodal input
 
 # Classes
-1) documeasure - this will measure bias/polarisation in a pdf/text etc. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
+1) docucheck - this will measure bias/polarisation in a pdf/text etc. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
 ```python
-biascheck.documeasure(data:Any, document:Optional, terms:Optional)
+biascheck.docucheck(data:Any, document:Optional, terms:Optional)
 ```
 
-2) modumeasure - this will measure bias/polarisation in a model etc. If a person enters a document, it will turn into a simple RAG model, they can further customise it by choosing their own pipeline/retreivers. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
+2) moducheck - this will measure bias/polarisation in a model etc. If a person enters a document, it will turn into a simple RAG model, they can further customise it by choosing their own pipeline/retreivers. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
 ```python
-biascheck.modumeasure(data:Any, model:Any, document:Optional, terms:Optional, retreiver:Optional, israg=False)
+biascheck.moducheck(data:Any, model:Any, document:Optional, terms:Optional, retreiver:Optional, israg=False)
+```
+
+3) setcheck - this will measure bias/polarisation in a model etc. If a person enters a dataset, they can check if their dataset is skewed or biased. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
+```python
+biascheck.setcheck(data:Any, inputCols=[], terms:Optional)
+```
+
+4) basecheck - this will measure the bias/polarisation in your whole database, also you can generate a report with the most frequently occuring terms. Both graph and vector databases will work.
+```python
+biascheck.basecheck(data:Any, inputCols=[], terms:Optional)
 ```
