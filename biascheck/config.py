@@ -1,3 +1,0 @@
-DEFAULT_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-DEFAULT_TERMS_FILE = "terms.txt"
-DEFAULT_VISUALIZATION_COLORS = ["#FF6347", "#4682B4", "#32CD32"]

@@ -4,9 +4,9 @@ setup(
     name="biascheck",
     version="0.1.0",
     description="An open-source library for checking bias in documents, models, datasets, and databases.",
-    author="Your Name",
-    author_email="your.email@example.com",
-    url="https://github.com/yourusername/biascheck",
+    author="Arjun Balaji",
+    author_email="arjun.balaji.02@example.com",
+    url="https://github.com/ArjunBalaji79/biascheck",
     packages=find_packages(),
     install_requires=[
         "transformers",
