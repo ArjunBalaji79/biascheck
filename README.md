@@ -7,3 +7,5 @@ An open source library for checking bias
 3) You can also upload a list of polarising terms - relevant to the context you want to check in, for example it changes from country to country (helps with NER, etc..)
 4) All of this will be usable from the CLI/pip library/repo
 5) there will be some sample notebooks
+6) Currently it will check for language inputs but eventually will be extended for multimodal input
+
