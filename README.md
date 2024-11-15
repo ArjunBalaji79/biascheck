@@ -3,14 +3,15 @@
 An open-source library for checking and analyzing bias in language models, documents, datasets, and databases. The library is designed to cater to researchers, developers, and practitioners by offering a streamlined API, CLI tools, and extensibility for custom pipelines.
 
 ## Functionalities:
-  1.  LLM Integration: Easily initialize and evaluate LLMs with minimal configuration.
+1) LLM Integration: Easily initialize and evaluate LLMs with minimal configuration.
 Example:'''python
 from biascheck import moducheck
 result = moducheck(data, model=llm, israg=True)
 '''
-	2.	Automated RAG Pipeline:
+2) Automated RAG Pipeline:
 Automatically build a simple Retrieval-Augmented Generation (RAG) pipeline when analyzing documents.
-	3.	Context-Aware Bias Detection:
+
+3) Context-Aware Bias Detection:
 Upload custom lists of polarizing terms to adapt the library for local contexts.
 	4.	CLI and Pip Support:
 Run bias checks via command-line tools or use it as a Python library.
