@@ -1,6 +1,8 @@
 import re
 import os
 import fitz  # PyMuPDF for PDF parsing
+import pandas as pd
+
 
 def preprocess_text(text):
     """

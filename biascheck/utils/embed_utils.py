@@ -1,6 +1,7 @@
 from transformers import AutoTokenizer, AutoModel
 import torch
 import numpy as np
+import pandas as pd
 
 class Embedder:
     def __init__(self, model_name="sentence-transformers/all-MiniLM-L6-v2", batch_size=16):
