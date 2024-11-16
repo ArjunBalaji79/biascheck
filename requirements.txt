@@ -6,3 +6,5 @@ pandas
 matplotlib
 wordcloud
 click
+scikit-learn
+pymupdf

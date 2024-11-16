@@ -17,6 +17,8 @@ setup(
         "matplotlib",
         "wordcloud",
         "click",
+        "scikit-learn",
+        "pymupdf",
     ],
     entry_points={
         "console_scripts": [

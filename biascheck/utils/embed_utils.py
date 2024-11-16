@@ -10,6 +10,9 @@ class Embedder:
             model_name (str): Transformer model name.
             batch_size (int): Batch size for efficient embedding.
         """
+        if model_name is None:
+            raise ValueError("`model_name` cannot be None. Please provide a valid Hugging Face model name.")
+        
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModel.from_pretrained(model_name)
         self.batch_size = batch_size

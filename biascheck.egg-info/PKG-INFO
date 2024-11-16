@@ -13,3 +13,5 @@ Requires-Dist: pandas
 Requires-Dist: matplotlib
 Requires-Dist: wordcloud
 Requires-Dist: click
+Requires-Dist: scikit-learn
+Requires-Dist: pymupdf
