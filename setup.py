@@ -19,6 +19,7 @@ setup(
         "click",
         "scikit-learn",
         "pymupdf",
+        "langchain",
     ],
     entry_points={
         "console_scripts": [
