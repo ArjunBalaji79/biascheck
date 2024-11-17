@@ -8,3 +8,4 @@ wordcloud
 click
 scikit-learn
 pymupdf
+langchain
