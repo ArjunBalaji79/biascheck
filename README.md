@@ -5,7 +5,7 @@ BiasCheck is a robust and modular Python library designed to analyze and detect 
 ---
 
 ## **Features**
-- **Modular Design**: Inspired by frameworks like PyTorch, BiasCheck offers modular and extensible classes for different bias analysis tasks.
+- **Modular Design**: BiasCheck offers modular and extensible classes for different bias analysis tasks.
 - **Bias Detection**: Analyze text, datasets, or language models for various types of bias.
 - **Support for RAG**: Automatically create Retrieval-Augmented Generation (RAG) pipelines using documents or PDFs.
 - **Sentiment Analysis**: Assess sentiment polarity alongside bias.
@@ -99,7 +99,6 @@ visualiser.plot_bias_categories(flagged_records)
 
 ### Prerequisites
 - Python 3.8 or above.
-- Basic familiarity with Python libraries like pandas and transformers.
 
 ### Installation
 
@@ -122,38 +121,16 @@ pip install -r requirements.txt
 
 4. Set up the library:
 ```bash
-pip install .
+pip install -e .
 ```
 
 ## **Usage**
 
 ### Run Examples
-The examples/ directory contains example scripts for all analysis classes:
+The notebooks/ directory contains example scripts for all analysis classes:
 ```bash
-python examples/moducheck_with_ollama.py
-python examples/docucheck_example.py
-```
-
-### Running Tests
-Run the tests to ensure everything is working correctly:
-```bash
-pytest
-```
-
-## **Directory Structure**
-```
-biascheck/
-├── analysis/
-│   ├── docucheck.py       # Analyze standalone text/documents for bias
-│   ├── moducheck.py       # Analyze language model outputs and RAG pipelines
-│   ├── setcheck.py        # Analyze datasets for bias
-├── visualisation/
-│   ├── visualiser.py      # Visualization tools for flagged data
-├── utils/
-│   ├── terms_loader.py    # Helper functions for term loading
-│   ├── embed_utils.py     # Embedding-related utilities
-├── examples/              # Example scripts for all classes
-├── tests/                 # Unit tests for library components
+python notebooks/moducheck_example.py
+python notebooks/docucheck_example.py
 ```
 
 ## **Contributing**
@@ -165,13 +142,8 @@ We welcome contributions! Please fork the repository, make your changes, and sub
 - Enhanced RAG Pipelines: Improve integration with custom retrievers.
 - Advanced Bias Categories: Expand predefined bias categories for deeper contextual analysis.
 
-## **License**
-
-This library is licensed under the MIT License. See the LICENSE file for details.
-
 ## **Contact**
 
 For questions, suggestions, or feedback, reach out to the project maintainer:
-- Name: [Your Name]
-- Email: your.email@example.com
-- GitHub: https://github.com/your-username
+- Name: Arjun Balaji
+- Email: arjun.balaji@gmail.com
