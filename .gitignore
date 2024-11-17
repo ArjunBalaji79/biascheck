@@ -1,0 +1,78 @@
+# Byte-compiled files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Logs and debugging files
+*.log
+*.out
+*.err
+
+# Virtual environments
+env/
+venv/
+.venv/
+
+# Cache files
+*.cache
+*.egg-info/
+*.eggs/
+*.sqlite3
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-workspace
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Configuration files
+*.cfg
+*.ini
+
+# Python egg files
+*.egg
+*.manifest
+*.spec
+
+# PDFs and other documents (can be adjusted)
+*.pdf
+*.docx
+*.odt
+
+# Generated CSVs or data
+*.csv
+*.tsv
+*.json
+
+# Saved models or embeddings
+*.bin
+*.ckpt
+*.h5
+*.onnx
+*.pth
+*.pt
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# Output files
+outputs/
+results/
+flagged_outputs*.csv
+
+# LangChain-specific cache
+.langchain_cache/
+
+# HuggingFace-related cache
+.huggingface/
+transformers_cache/
+
+# PyPDF2 logs or extracted outputs (if any)
+extracted_text/
