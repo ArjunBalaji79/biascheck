@@ -1,46 +1,177 @@
-# biascheck
+# **BiasCheck: An Open-Source Library for Bias Detection**
 
-An open-source library for checking and analyzing bias in language models, documents, datasets, and databases. The library is designed to cater to researchers, developers, and practitioners by offering a streamlined API, CLI tools, and extensibility for custom pipelines.
+BiasCheck is a robust and modular Python library designed to analyze and detect bias in text, models, and datasets. It provides tools for researchers, data scientists, and developers to measure various forms of bias (e.g., stereotypical, cultural) and assess the quality of language model outputs or textual data.
 
-## Functionalities:
-1) LLM Integration: Easily initialize and evaluate LLMs with minimal configuration.
-Example:
+---
+
+## **Features**
+- **Modular Design**: Inspired by frameworks like PyTorch, BiasCheck offers modular and extensible classes for different bias analysis tasks.
+- **Bias Detection**: Analyze text, datasets, or language models for various types of bias.
+- **Support for RAG**: Automatically create Retrieval-Augmented Generation (RAG) pipelines using documents or PDFs.
+- **Sentiment Analysis**: Assess sentiment polarity alongside bias.
+- **Visualization**: Visualize flagged sentences and bias types in your analysis.
+
+---
+
+## **Main Classes**
+
+### **1. `DocuCheck`**
+Analyze bias in standalone text documents or files.
+
+#### Key Features:
+- Accepts text data or documents (e.g., PDF, TXT).
+- Detects flagged sentences and calculates a bias score.
+- Optionally uses a list of polarizing terms for context-specific bias detection.
+
+#### Example:
 ```python
-from biascheck import moducheck
-result = moducheck(data, model=llm, israg=True)
-```
-2) Automated RAG Pipeline:
-Automatically build a simple Retrieval-Augmented Generation (RAG) pipeline when analyzing documents.
+from biascheck.analysis.docucheck import DocuCheck
 
-3) Context-Aware Bias Detection:
-Upload custom lists of polarizing terms to adapt the library for local contexts.
+data = "This is a sample document that may contain biases."
+terms = ["biased", "lazy", "discrimination"]
 
-3) CLI and Pip Support:
-Run bias checks via command-line tools or use it as a Python library.
-
-5) Sample Notebooks:
-Tutorials and examples for common use cases.
-
-7) Future-Proof for Multimodal Inputs:
-Designed to extend support for image, video, and audio inputs in later versions.
-
-## Classes
-1) docucheck - this will measure bias/polarisation in a pdf/text etc. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
-```python
-biascheck.docucheck(data:Any, document:Optional, terms:Optional)
-```
-
-2) moducheck - this will measure bias/polarisation in a model etc. If a person enters a document, it will turn into a simple RAG model, they can further customise it by choosing their own pipeline/retreivers. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
-```python
-biascheck.moducheck(data:Any, model:Any, document:Optional, terms:Optional, retreiver:Optional, israg=False)
-```
-
-3) setcheck - this will measure bias/polarisation in a model etc. If a person enters a dataset, they can check if their dataset is skewed or biased. They can enter an optional text file if they want with key words such as local terms and their meaning (in the format of word:meaning), this allows for local language terms to be identified to find bias in every context
-```python
-biascheck.setcheck(data:Any, inputCols=[], terms:Optional)
+analyzer = DocuCheck(data=data, terms=terms)
+result = analyzer.analyze(verbose=False)
+print(result)
 ```
 
-4) basecheck - this will measure the bias/polarisation in your whole database, also you can generate a report with the most frequently occuring terms. Both graph and vector databases will work.
+### **2. SetCheck**
+
+Analyze entire datasets (e.g., DataFrames) for skewed or biased records.
+
+#### Key Features:
+- Works with Python DataFrames and CSV files.
+- Adds bias-related columns to the dataset.
+- Returns flagged records and overall bias analysis.
+
+#### Example:
 ```python
-biascheck.basecheck(data:Any, inputCols=[], terms:Optional)
+from biascheck.analysis.setcheck import SetCheck
+
+data = [{"text": "A biased example."}, {"text": "A neutral sentence."}]
+terms = ["bias", "stereotype"]
+
+analyzer = SetCheck(data=data, input_cols=["text"], terms=terms)
+flagged_df = analyzer.analyze(top_n=5)
+print(flagged_df)
 ```
+
+### **3. ModuCheck**
+
+Analyze bias in language model outputs and create RAG pipelines.
+
+#### Key Features:
+- Supports HuggingFace, Ollama, and local GGUF models.
+- Detects bias in generated outputs based on user-provided topics.
+- Automatically builds a RAG pipeline if a document is provided.
+- Saves flagged outputs and bias results to a DataFrame.
+
+#### Example:
+```python
+from biascheck.analysis.moducheck import ModuCheck
+from langchain.llms import Ollama
+
+model = Ollama(model="llama3")
+topics = ["The role of women in leadership", "Cultural diversity"]
+
+analyzer = ModuCheck(model=model, terms=["bias", "stereotype"], document="file.pdf")
+result = analyzer.analyze(topics=topics, num_responses=5)
+print(result)
+```
+
+### **4. Visualiser**
+
+Visualize the results of bias analysis.
+
+#### Key Features:
+- Generates bar charts for flagged bias categories.
+- Visualizes flagged sentences and bias distribution.
+
+#### Example:
+```python
+from biascheck.visualisation.visualiser import Visualiser
+
+visualiser = Visualiser()
+visualiser.plot_bias_categories(flagged_records)
+```
+
+## **Setup Instructions**
+
+### Prerequisites
+- Python 3.8 or above.
+- Basic familiarity with Python libraries like pandas and transformers.
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/your-repo/biascheck.git
+cd biascheck
+```
+
+2. Create a virtual environment:
+```bash
+python -m venv env
+source env/bin/activate  # For Windows: env\Scripts\activate
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Set up the library:
+```bash
+pip install .
+```
+
+## **Usage**
+
+### Run Examples
+The examples/ directory contains example scripts for all analysis classes:
+```bash
+python examples/moducheck_with_ollama.py
+python examples/docucheck_example.py
+```
+
+### Running Tests
+Run the tests to ensure everything is working correctly:
+```bash
+pytest
+```
+
+## **Directory Structure**
+```
+biascheck/
+├── analysis/
+│   ├── docucheck.py       # Analyze standalone text/documents for bias
+│   ├── moducheck.py       # Analyze language model outputs and RAG pipelines
+│   ├── setcheck.py        # Analyze datasets for bias
+├── visualisation/
+│   ├── visualiser.py      # Visualization tools for flagged data
+├── utils/
+│   ├── terms_loader.py    # Helper functions for term loading
+│   ├── embed_utils.py     # Embedding-related utilities
+├── examples/              # Example scripts for all classes
+├── tests/                 # Unit tests for library components
+```
+
+## **Contributing**
+
+We welcome contributions! Please fork the repository, make your changes, and submit a pull request. Ensure all new features are covered with appropriate tests.
+
+## **Future Work**
+- Multimodal Support: Expand the library to include image, video, and audio bias detection.
+- Enhanced RAG Pipelines: Improve integration with custom retrievers.
+- Advanced Bias Categories: Expand predefined bias categories for deeper contextual analysis.
+
+## **License**
+
+This library is licensed under the MIT License. See the LICENSE file for details.
+
+## **Contact**
+
+For questions, suggestions, or feedback, reach out to the project maintainer:
+- Name: [Your Name]
+- Email: your.email@example.com
+- GitHub: https://github.com/your-username
