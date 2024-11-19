@@ -9,3 +9,6 @@ click
 scikit-learn
 pymupdf
 langchain
+scipy
+langchain-community
+seaborn

@@ -20,6 +20,12 @@ venv/
 *.eggs/
 *.sqlite3
 
+# Build files
+build/
+dist/
+*.whl
+*.tar.gz
+
 # IDE files
 .vscode/
 .idea/
