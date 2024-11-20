@@ -1,15 +1,12 @@
 from ..utils.embed_utils import Embedder
 from ..utils.terms_loader import load_terms, preprocess_text
 from sklearn.metrics.pairwise import cosine_similarity
-from textblob import TextBlob
+from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 import spacy
+import pandas as pd
 
 
 class DocuCheck:
-    DEFAULT_TERMS = [
-        "lazy", "biased", "superior", "inferior", "hate", "discrimination", "polarization"
-    ]
-
     def __init__(
         self,
         data=None,
@@ -18,10 +15,12 @@ class DocuCheck:
         model_name="sentence-transformers/all-MiniLM-L6-v2",
         bias_threshold=0.4,
         use_ner=False,
+        use_advanced_sentiment=False,
+        use_contextual_analysis=False,
         verbose=False,
     ):
         """
-        Enhanced Document bias analysis class.
+        Advanced Document bias analysis class with hypothesis-based contextual analysis.
 
         Parameters:
             data (str): Raw text data to analyze (optional).
@@ -30,20 +29,34 @@ class DocuCheck:
             model_name (str): Transformer model for embedding.
             bias_threshold (float): Threshold for cosine similarity to detect bias.
             use_ner (bool): Whether to use Named Entity Recognition (NER).
+            use_advanced_sentiment (bool): Use transformer-based sentiment analysis.
+            use_contextual_analysis (bool): Use hypothesis-based contextual analysis for bias reasoning.
             verbose (bool): Whether to print intermediate results for debugging.
         """
         self.data = self._load_data(data, document)
-        self.terms = load_terms(terms) if terms else self.DEFAULT_TERMS
-        self.embedder = Embedder(model_name=model_name)
+        self.terms = load_terms(terms) if terms else None
+        self.embedder = Embedder(model_name=model_name) if self.terms else None
         self.bias_threshold = bias_threshold
         self.use_ner = use_ner
         self.verbose = verbose
+        self.use_advanced_sentiment = use_advanced_sentiment
+        self.use_contextual_analysis = use_contextual_analysis
         self.nlp = spacy.load("en_core_web_sm") if use_ner else None
 
+        # Load advanced sentiment and contextual analysis models if enabled
+        if self.use_advanced_sentiment:
+            self.sentiment_analyzer = pipeline("sentiment-analysis", model="cardiffnlp/twitter-roberta-base-sentiment")
+        if self.use_contextual_analysis:
+            self.contextual_model_name = "facebook/bart-large-mnli"
+            self.contextual_tokenizer = AutoTokenizer.from_pretrained(self.contextual_model_name)
+            self.contextual_model = AutoModelForSequenceClassification.from_pretrained(self.contextual_model_name)
+
     def _load_data(self, data, document):
+        """
+        Load the data from raw text or a document file.
+        """
         if document:
-            text = preprocess_text(document)
-            return text
+            return preprocess_text(document)
         if data:
             return data
         raise ValueError("Either `data` or `document` must be provided.")
@@ -60,69 +73,81 @@ class DocuCheck:
         """
         Perform sentiment analysis on a sentence.
         """
-        analysis = TextBlob(sentence)
-        polarity = analysis.sentiment.polarity  # Range: [-1.0, 1.0]
-        return polarity
+        if self.use_advanced_sentiment:
+            result = self.sentiment_analyzer(sentence)
+            sentiment = result[0]["label"]
+            score = result[0]["score"]
+            return sentiment, score
+        else:
+            from textblob import TextBlob
+            analysis = TextBlob(sentence)
+            polarity = analysis.sentiment.polarity
+            return "positive" if polarity > 0 else "negative" if polarity < 0 else "neutral", polarity
 
-    def analyze(self, top_n=5):
+    def _contextual_analysis(self, sentence):
+        """
+        Perform hypothesis-based contextual analysis using a transformer-based model.
+        """
+        hypotheses = [
+            "This sentence promotes discrimination.",
+            "This sentence is fair and unbiased.",
+            "This sentence is offensive.",
+        ]
+        inputs = [
+            self.contextual_tokenizer(sentence, hypothesis, return_tensors="pt", truncation=True)
+            for hypothesis in hypotheses
+        ]
+        outputs = [self.contextual_model(**input_) for input_ in inputs]
+        predictions = [output.logits.softmax(dim=1)[0].tolist() for output in outputs]
+        return {hypotheses[i]: predictions[i][2] for i in range(len(hypotheses))}  # Use entailment score
+
+    def analyze(self):
         """
         Analyze the document for bias, sentiment, and polarization.
 
-        Parameters:
-            top_n (int): Number of top biased sentences to return in verbose=False mode.
-
         Returns:
-            dict: Results with either concise or detailed information.
+            pd.DataFrame: A DataFrame with analysis results for each sentence.
         """
         if self.verbose:
             print(f"Analyzing document with {len(self.data.splitlines())} lines...")
 
         doc = self.nlp(self.data) if self.use_ner else None
         sentences = [sent.text.strip() for sent in doc.sents] if doc else self.data.split(".")
-        term_embeddings = self.embedder.embed(self.terms)
-        sentence_embeddings = self.embedder.embed(sentences)
+        term_embeddings = self.embedder.embed(self.terms) if self.terms else None
+        sentence_embeddings = self.embedder.embed(sentences) if self.terms else None
 
-        flagged_sentences = []
-        flagged_entities = []
-        sentiment_scores = []
-        detailed_results = []
+        results = []
 
         for i, sentence in enumerate(sentences):
-            similarity = cosine_similarity([sentence_embeddings[i]], term_embeddings).mean()
-            sentiment = self._sentiment_analysis(sentence)
+            if not sentence.strip():
+                continue
 
-            if similarity > self.bias_threshold or sentiment < -0.5:  # Adjust thresholds as needed
-                flagged_sentences.append(sentence)
-                if self.use_ner:
-                    flagged_entities.extend(self._ner_analysis(sentence))
-            
-            sentiment_scores.append(sentiment)
-            detailed_results.append((sentence, similarity, sentiment))
+            # Sentiment analysis
+            sentiment, sentiment_score = self._sentiment_analysis(sentence)
 
-            if self.verbose:
-                print(f"Sentence: {sentence}\nSimilarity: {similarity:.2f}\nSentiment: {sentiment:.2f}")
+            # Contextual analysis
+            context_result = None
+            if self.use_contextual_analysis:
+                context_result = self._contextual_analysis(sentence)
 
-        # Sort flagged sentences by similarity or sentiment
-        detailed_results.sort(key=lambda x: max(x[1], abs(x[2])), reverse=True)
-        top_flagged = detailed_results[:top_n]
+            # Similarity analysis
+            similarity = None
+            if self.terms:
+                similarity = cosine_similarity([sentence_embeddings[i]], term_embeddings).mean()
 
-        bias_score = len(flagged_sentences) / max(len(sentences), 1)
-        overall_sentiment = sum(sentiment_scores) / len(sentiment_scores) if sentiment_scores else 0
+            # Determine the final hypothesis from contextual analysis
+            if context_result:
+                final_hypothesis = max(context_result, key=context_result.get)
+            else:
+                final_hypothesis = "Not Analyzed"
 
-        if self.verbose:
-            return {
-                "bias_score": bias_score,
-                "overall_sentiment": overall_sentiment,
-                "flagged_sentences": flagged_sentences,
-                "flagged_entities": flagged_entities if self.use_ner else None,
-                "sentence_sentiment_scores": sentiment_scores,
-            }
-        else:
-            return {
-                "bias_score": bias_score,
-                "overall_sentiment": overall_sentiment,
-                "top_flagged_sentences": [
-                    {"sentence": res[0], "similarity": res[1], "sentiment": res[2]} for res in top_flagged
-                ],
-                "flagged_entities": flagged_entities if self.use_ner else None,
-            }
+            results.append({
+                "sentence": sentence,
+                "sentiment": sentiment,
+                "sentiment_score": sentiment_score,
+                "similarity": similarity,
+                **context_result,
+                "final_hypothesis": final_hypothesis,
+            })
+
+        return pd.DataFrame(results)

@@ -1,8 +1,9 @@
 import pandas as pd
-from ..utils.embed_utils import Embedder
-from ..utils.terms_loader import load_terms
 from sklearn.metrics.pairwise import cosine_similarity
+from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 from textblob import TextBlob
+from tqdm import tqdm
+import numpy as np
 
 
 class SetCheck:
@@ -12,72 +13,111 @@ class SetCheck:
         input_cols=None,
         terms=None,
         model_name="sentence-transformers/all-MiniLM-L6-v2",
-        bias_threshold=0.4,
+        use_contextual_analysis=False,
         verbose=False,
     ):
         """
-        Analyze a dataset for bias, sentiment, and polarization.
+        Analyze a dataset for bias, fairness, and polarization.
 
         Parameters:
             data (list or DataFrame): Dataset to analyze (list of dictionaries or Pandas DataFrame).
             input_cols (list): List of columns containing text to analyze.
-            terms (str or list): Terms to check for bias (optional).
+            terms (str or list): Terms to check for bias (optional). If None, skips term-based bias analysis.
             model_name (str): Transformer model for embedding.
-            bias_threshold (float): Threshold for cosine similarity to detect bias.
+            use_contextual_analysis (bool): Use contextual reasoning for bias detection.
             verbose (bool): Whether to print intermediate results for debugging.
         """
         self.data = data
-        self.input_cols = input_cols or []  # Ensure input columns are specified
-        self.terms = load_terms(terms) if terms else []
-        self.embedder = Embedder(model_name=model_name)
-        self.bias_threshold = bias_threshold
+        self.input_cols = input_cols or []
+        self.terms = terms
+        self.model_name = model_name
         self.verbose = verbose
+        self.use_contextual_analysis = use_contextual_analysis
+
+        # Load contextual analysis model if enabled
+        if self.use_contextual_analysis:
+            self.contextual_model_name = "facebook/bart-large-mnli"
+            self.contextual_tokenizer = AutoTokenizer.from_pretrained(self.contextual_model_name)
+            self.contextual_model = AutoModelForSequenceClassification.from_pretrained(self.contextual_model_name)
+
+        # Load sentiment analysis pipeline
+        self.sentiment_analyzer = pipeline("sentiment-analysis", model="cardiffnlp/twitter-roberta-base-sentiment")
 
     def _sentiment_analysis(self, sentence):
         """
-        Perform sentiment analysis on a sentence.
+        Perform advanced sentiment analysis on a sentence.
         """
-        analysis = TextBlob(sentence)
-        return analysis.sentiment.polarity  # Range: [-1.0, 1.0]
+        try:
+            result = self.sentiment_analyzer(sentence)
+            sentiment = result[0]["label"]
+            score = result[0]["score"]
+        except Exception:
+            # Fallback to TextBlob if sentiment analysis fails
+            blob = TextBlob(sentence)
+            sentiment = "negative" if blob.sentiment.polarity < 0 else "positive"
+            score = blob.sentiment.polarity
+        return sentiment, score
+
+    def _contextual_analysis(self, sentence):
+        """
+        Perform contextual bias analysis using natural language inference.
+        """
+        hypotheses = [
+            "This sentence promotes discrimination.",
+            "This sentence is fair and unbiased.",
+            "This sentence is offensive.",
+        ]
+
+        try:
+            inputs = [
+                self.contextual_tokenizer(sentence, hypothesis, return_tensors="pt", truncation=True)
+                for hypothesis in hypotheses
+            ]
+            outputs = [self.contextual_model(**input_) for input_ in inputs]
+            predictions = [output.logits.softmax(dim=-1).detach().numpy().squeeze() for output in outputs]
+            return {hypotheses[i]: predictions[i] for i in range(len(hypotheses))}
+        except Exception as e:
+            if self.verbose:
+                print(f"Contextual analysis failed for sentence: {sentence}. Error: {e}")
+            return {}
 
     def _process_text(self, text):
         """
-        Process and analyze text for bias.
+        Analyze text for bias and polarization.
         """
         sentences = text.split(".")
-        sentence_embeddings = self.embedder.embed(sentences)
-        term_embeddings = self.embedder.embed(self.terms)
+        processed = []
 
-        flagged = []
-        for i, sentence in enumerate(sentences):
-            if not sentence.strip():
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if not sentence:
                 continue
 
-            similarity = cosine_similarity([sentence_embeddings[i]], term_embeddings).mean()
-            sentiment = self._sentiment_analysis(sentence)
+            # Perform sentiment analysis
+            sentiment, sentiment_score = self._sentiment_analysis(sentence)
 
-            if self.verbose:
-                print(f"Sentence: {sentence}\nSimilarity: {similarity:.2f}\nSentiment: {sentiment:.2f}")
+            # Perform contextual analysis
+            context_result = None
+            if self.use_contextual_analysis:
+                context_result = self._contextual_analysis(sentence)
 
-            if similarity > self.bias_threshold or sentiment < -0.5:
-                flagged.append(
-                    {
-                        "flagged_text": sentence.strip(),
-                        "bias_score": similarity,
-                        "sentiment": sentiment,
-                    }
-                )
-        return flagged
+            processed.append(
+                {
+                    "sentence": sentence,
+                    "sentiment": sentiment,
+                    "sentiment_score": sentiment_score,
+                    "contextual_analysis": context_result,
+                }
+            )
 
-    def analyze(self, top_n=5):
+        return processed
+
+    def analyze(self):
         """
-        Analyze the dataset for bias.
-
-        Parameters:
-            top_n (int): Number of top biased records to return.
+        Analyze the dataset for bias, fairness, and polarization.
 
         Returns:
-            DataFrame: A DataFrame containing flagged records and their analysis.
+            DataFrame: A DataFrame containing structured results with the specified columns.
         """
         if isinstance(self.data, pd.DataFrame):
             data_type = "DataFrame"
@@ -89,34 +129,74 @@ class SetCheck:
         if not self.input_cols:
             raise ValueError("`input_cols` must be provided to specify text fields for analysis.")
 
-        flagged_records = []
-        for idx, record in (self.data.iterrows() if data_type == "DataFrame" else enumerate(self.data)):
+        structured_results = []
+        for idx, record in tqdm(self.data.iterrows() if data_type == "DataFrame" else enumerate(self.data), desc="Analyzing Records"):
             for col in self.input_cols:
-                if data_type == "List" and col not in record:
-                    continue
+                text = record[col] if data_type == "List" else record[col]
+                processed = self._process_text(text)
+                for result in processed:
+                    hypotheses = result.get("contextual_analysis", {})
+                    hypothesis_columns = {}
+                    
+                    # Handle cases where predictions are malformed
+                    for key, value in hypotheses.items():
+                        if isinstance(value, np.ndarray) and len(value) > 1:
+                            hypothesis_columns[key] = value[1]  # Take the entailment score
+                        else:
+                            hypothesis_columns[key] = None  # Default to None if malformed
 
-                text = record[col] if data_type == "List" else record[col]  # Handle Series for DataFrame
-                flagged = self._process_text(text)
-                for flag in flagged:
-                    flagged_records.append(
-                        {
-                            "id": record["id"] if data_type == "List" else idx,  # Extract ID correctly
-                            "column": col,
-                            **flag,
-                        }
-                    )
+                    final_hypothesis = None
+                    if (
+                        "This sentence promotes discrimination." in hypotheses
+                        and isinstance(hypotheses["This sentence promotes discrimination."], np.ndarray)
+                        and len(hypotheses["This sentence promotes discrimination."]) > 1
+                        and hypotheses["This sentence promotes discrimination."][1] > 0.5
+                    ):
+                        final_hypothesis = "Discriminatory"
+                    elif (
+                        "This sentence is fair and unbiased." in hypotheses
+                        and isinstance(hypotheses["This sentence is fair and unbiased."], np.ndarray)
+                        and len(hypotheses["This sentence is fair and unbiased."]) > 1
+                        and hypotheses["This sentence is fair and unbiased."][1] > 0.5
+                    ):
+                        final_hypothesis = "Fair"
+                    else:
+                        final_hypothesis = "Neutral/Unclear"
 
-        # Convert flagged records to a DataFrame
-        flagged_df = pd.DataFrame(flagged_records)
+                    structured_results.append({
+                        "sentence": result["sentence"],
+                        "sentiment": result["sentiment"],
+                        "sentiment_score": result["sentiment_score"],
+                        **hypothesis_columns,
+                        "final_contextual_analysis": final_hypothesis,
+                    })
 
-        if flagged_df.empty:
-            print("No flagged records found.")
-            return flagged_df
+        self.results_df = pd.DataFrame(structured_results)
 
-        # Sort flagged records by bias score or sentiment
-        flagged_df = flagged_df.sort_values(
-            by=["bias_score", "sentiment"], ascending=[False, True]
-        ).reset_index(drop=True)
+        if self.results_df.empty:
+            print("No records found.")
+            return self.results_df
 
-        # Limit to top_n flagged records if specified
-        return flagged_df.head(top_n)
+        return self.results_df
+
+    def filter_dataframe(self, filter_conditions):
+        """
+        Filter the results DataFrame based on conditions.
+
+        Parameters:
+            filter_conditions (dict): Conditions to filter the DataFrame.
+
+        Returns:
+            DataFrame: Filtered DataFrame.
+        """
+        if not hasattr(self, "results_df") or self.results_df.empty:
+            raise ValueError("Results DataFrame is empty. Run analyze() first.")
+
+        filtered_df = self.results_df
+        for column, condition in filter_conditions.items():
+            if column in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df[column] == condition]
+            else:
+                print(f"Column {column} not found in DataFrame.")
+
+        return filtered_df
