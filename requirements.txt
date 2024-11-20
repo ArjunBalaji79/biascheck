@@ -14,3 +14,5 @@ langchain-community
 seaborn
 langchain_huggingface
 langchain_ollama
+py2neo
+datasets

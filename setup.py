@@ -5,7 +5,7 @@ subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=Tr
 
 setup(
     name="biascheck",
-    version="0.6.0",
+    version="0.8.0",
     author="Arjun Balaji",
     author_email="",
     description="A library for detecting and analyzing bias in text, datasets, and language models.",
@@ -34,6 +34,8 @@ setup(
         "seaborn",
         "langchain_huggingface",
         "langchain_ollama",
+        "py2neo",
+        "datasets"
         
     ],
 
