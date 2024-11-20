@@ -32,6 +32,8 @@ setup(
         "scipy",
         "langchain-community",
         "seaborn",
+        "langchain_huggingface",
+        "langchain_ollama",
         
     ],
 
