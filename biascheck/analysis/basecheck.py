@@ -1,9 +1,9 @@
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-from py2neo import Graph
 from langchain.vectorstores import FAISS
 from biascheck.utils.embed_utils import Embedder
 from biascheck.utils.terms_loader import load_terms
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 
 
 class BaseCheck:
@@ -40,7 +40,6 @@ class BaseCheck:
 
         # Load sentiment and contextual analysis models if enabled
         if use_contextual_analysis or use_sentiment_analysis:
-            from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
             self.contextual_model_name = "facebook/bart-large-mnli"
             self.contextual_tokenizer = AutoTokenizer.from_pretrained(self.contextual_model_name)
             self.contextual_model = AutoModelForSequenceClassification.from_pretrained(self.contextual_model_name)
@@ -57,10 +56,15 @@ class BaseCheck:
         Returns:
             tuple: Sentiment label and score.
         """
-        result = self.sentiment_analyzer(text)
-        sentiment = result[0]["label"]
-        score = result[0]["score"]
-        return sentiment, score
+        try:
+            result = self.sentiment_analyzer(text[:512])  # Truncate text to prevent token overflow
+            sentiment = result[0]["label"]
+            score = result[0]["score"]
+            return sentiment, score
+        except Exception as e:
+            if self.verbose:
+                print(f"Sentiment analysis failed: {e}")
+            return "neutral", 0.0
 
     def _contextual_analysis(self, text):
         """
@@ -78,122 +82,78 @@ class BaseCheck:
             "This sentence is offensive.",
         ]
 
-        results = []
-        for hypothesis in hypotheses:
-            inputs = self.contextual_tokenizer(
-                text, hypothesis, return_tensors="pt", truncation=True, padding=True, max_length=512
-            )
-            outputs = self.contextual_model(**inputs)
-            score = outputs.logits.softmax(dim=1).tolist()[0]
-            results.append(score)
+        try:
+            inputs = [
+                self.contextual_tokenizer(
+                    text[:512],  # Truncate text to prevent token overflow
+                    hypothesis,
+                    return_tensors="pt",
+                    truncation=True,
+                    padding=True,
+                )
+                for hypothesis in hypotheses
+            ]
+            outputs = [self.contextual_model(**input_) for input_ in inputs]
+            scores = {hyp: output.logits.softmax(dim=1).tolist()[0][2] for hyp, output in zip(hypotheses, outputs)}
+            final_classification = max(scores, key=scores.get)
+            return {"scores": scores, "classification": final_classification}
+        except Exception as e:
+            if self.verbose:
+                print(f"Contextual analysis failed: {e}")
+            return {"scores": {}, "classification": "unknown"}
 
-        scores = {hyp: result[2] for hyp, result in zip(hypotheses, results)}
-        final_classification = max(scores, key=scores.get)
-
-        return {"scores": scores, "classification": final_classification}
-
-    def _chunk_text(self, text, max_length=512):
-        """
-        Chunk long text into smaller segments.
-
-        Parameters:
-            text (str): The text to chunk.
-            max_length (int): Maximum chunk size.
-
-        Returns:
-            list: List of text chunks.
-        """
-        words = text.split()
-        return [" ".join(words[i:i + max_length]) for i in range(0, len(words), max_length)]
-
-    def _analyze_vectordb(self):
+    def _analyze_vectordb(self, top_k=10):
         """
         Analyze a vector database (FAISS) for bias, sentiment, and contextual analysis.
 
+        Parameters:
+            top_k (int): Number of top documents to analyze.
+
         Returns:
             pd.DataFrame: Results of the analysis.
         """
         all_results = []
 
-        for doc in self.data.similarity_search(query=" ", k=len(self.data.index)):
-            text = doc.page_content
+        # Retrieve top_k documents
+        docs = self.data.similarity_search(query=" ", k=min(top_k, len(self.data.docstore._dict)))
+        for doc in docs:
+            text = doc.page_content[:512]  # Truncate text for safe processing
             metadata = doc.metadata
 
-            # Chunk text if necessary
-            text_chunks = self._chunk_text(text)
+            # Compute similarity with predefined terms
+            chunk_embedding = self.embedder.embed([text])[0]
+            term_embeddings = self.embedder.embed(self.terms)
+            similarity = cosine_similarity([chunk_embedding], term_embeddings).mean()
 
-            for chunk in text_chunks:
-                chunk_embedding = self.embedder.embed([chunk])[0]
-                term_embeddings = self.embedder.embed(self.terms)
-                similarity = cosine_similarity([chunk_embedding], term_embeddings).mean()
+            # Perform sentiment and contextual analysis
+            sentiment, sentiment_score = self._sentiment_analysis(text)
+            context_result = self._contextual_analysis(text)
 
-                sentiment, sentiment_score = self._sentiment_analysis(chunk)
-                context_result = self._contextual_analysis(chunk)
-
-                all_results.append({
-                    "text": chunk,
-                    "metadata": metadata,
-                    "similarity": similarity,
-                    "sentiment": sentiment,
-                    "sentiment_score": sentiment_score,
-                    **context_result,
-                })
+            all_results.append({
+                "text": text,
+                "metadata": metadata,
+                "similarity": similarity,
+                "sentiment": sentiment,
+                "sentiment_score": sentiment_score,
+                **context_result,
+            })
 
         return pd.DataFrame(all_results)
 
-    def _analyze_graphdb(self):
-        """
-        Analyze a graph database (Neo4j) for bias, sentiment, and contextual analysis.
-
-        Returns:
-            pd.DataFrame: Results of the analysis.
-        """
-        query = "MATCH (n) RETURN n"
-        records = self.data.run(query)
-
-        all_results = []
-
-        for record in records:
-            properties = record["n"]
-            for key, value in properties.items():
-                if not isinstance(value, str):
-                    continue
-
-                # Chunk text if necessary
-                text_chunks = self._chunk_text(value)
-
-                for chunk in text_chunks:
-                    chunk_embedding = self.embedder.embed([chunk])[0]
-                    term_embeddings = self.embedder.embed(self.terms)
-                    similarity = cosine_similarity([chunk_embedding], term_embeddings).mean()
-
-                    sentiment, sentiment_score = self._sentiment_analysis(chunk)
-                    context_result = self._contextual_analysis(chunk)
-
-                    all_results.append({
-                        "text": chunk,
-                        "key": key,
-                        "similarity": similarity,
-                        "sentiment": sentiment,
-                        "sentiment_score": sentiment_score,
-                        **context_result,
-                    })
-
-        return pd.DataFrame(all_results)
-
-    def analyze(self):
+    def analyze(self, top_k=10):
         """
         Analyze the database for bias, sentiment, and contextual analysis.
+
+        Parameters:
+            top_k (int): Number of top documents to analyze.
 
         Returns:
             pd.DataFrame: Results of the analysis.
         """
         if isinstance(self.data, FAISS):
-            return self._analyze_vectordb()
-        elif isinstance(self.data, Graph):
-            return self._analyze_graphdb()
+            return self._analyze_vectordb(top_k)
         else:
-            raise ValueError("Unsupported database type. Use FAISS or Neo4j Graph.")
+            raise ValueError("Unsupported database type. Use FAISS.")
 
     def generate_report(self, results_df):
         """
