@@ -4,6 +4,7 @@ from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassifica
 from textblob import TextBlob
 from tqdm import tqdm
 import numpy as np
+from sentence_transformers import SentenceTransformer
 
 
 class SetCheck:
@@ -14,6 +15,7 @@ class SetCheck:
         terms=None,
         model_name="sentence-transformers/all-MiniLM-L6-v2",
         use_contextual_analysis=False,
+        similarity_threshold=0.5,
         verbose=False,
     ):
         """
@@ -22,9 +24,10 @@ class SetCheck:
         Parameters:
             data (list or DataFrame): Dataset to analyze (list of dictionaries or Pandas DataFrame).
             input_cols (list): List of columns containing text to analyze.
-            terms (str or list): Terms to check for bias (optional). If None, skips term-based bias analysis.
+            terms (str or list): Terms to check for bias (optional).
             model_name (str): Transformer model for embedding.
             use_contextual_analysis (bool): Use contextual reasoning for bias detection.
+            similarity_threshold (float): Threshold for similarity to flag a sentence as biased.
             verbose (bool): Whether to print intermediate results for debugging.
         """
         self.data = data
@@ -33,6 +36,15 @@ class SetCheck:
         self.model_name = model_name
         self.verbose = verbose
         self.use_contextual_analysis = use_contextual_analysis
+        self.similarity_threshold = similarity_threshold
+
+        # Load embedding model
+        self.embedder = SentenceTransformer(model_name)
+
+        # Embed user-provided terms
+        self.term_embeddings = None
+        if self.terms:
+            self.term_embeddings = self.embedder.encode(self.terms, convert_to_tensor=True)
 
         # Load contextual analysis model if enabled
         if self.use_contextual_analysis:
@@ -101,11 +113,25 @@ class SetCheck:
             if self.use_contextual_analysis:
                 context_result = self._contextual_analysis(sentence)
 
+            # Compute similarity with user-provided terms
+            similarity_score = 0
+            if self.term_embeddings is not None:
+                sentence_embedding = self.embedder.encode([sentence], convert_to_tensor=True)
+                similarity_score = cosine_similarity(
+                    sentence_embedding.cpu().numpy(),
+                    self.term_embeddings.cpu().numpy(),
+                ).max()
+
+            # Determine if the sentence is flagged
+            flagged = similarity_score > self.similarity_threshold
+
             processed.append(
                 {
                     "sentence": sentence,
                     "sentiment": sentiment,
                     "sentiment_score": sentiment_score,
+                    "similarity": similarity_score,
+                    "flagged": flagged,
                     "contextual_analysis": context_result,
                 }
             )
@@ -138,7 +164,6 @@ class SetCheck:
                     hypotheses = result.get("contextual_analysis", {})
                     hypothesis_columns = {}
                     
-                    # Handle cases where predictions are malformed
                     for key, value in hypotheses.items():
                         if isinstance(value, np.ndarray) and len(value) > 1:
                             hypothesis_columns[key] = value[1]  # Take the entailment score
@@ -148,15 +173,11 @@ class SetCheck:
                     final_hypothesis = None
                     if (
                         "This sentence promotes discrimination." in hypotheses
-                        and isinstance(hypotheses["This sentence promotes discrimination."], np.ndarray)
-                        and len(hypotheses["This sentence promotes discrimination."]) > 1
                         and hypotheses["This sentence promotes discrimination."][1] > 0.5
                     ):
                         final_hypothesis = "Discriminatory"
                     elif (
                         "This sentence is fair and unbiased." in hypotheses
-                        and isinstance(hypotheses["This sentence is fair and unbiased."], np.ndarray)
-                        and len(hypotheses["This sentence is fair and unbiased."]) > 1
                         and hypotheses["This sentence is fair and unbiased."][1] > 0.5
                     ):
                         final_hypothesis = "Fair"
@@ -167,6 +188,8 @@ class SetCheck:
                         "sentence": result["sentence"],
                         "sentiment": result["sentiment"],
                         "sentiment_score": result["sentiment_score"],
+                        "similarity": result["similarity"],
+                        "flagged": result["flagged"],
                         **hypothesis_columns,
                         "final_contextual_analysis": final_hypothesis,
                     })

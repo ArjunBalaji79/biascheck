@@ -1,96 +1,78 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
-import pandas as pd
 
 
 class Visualiser:
     @staticmethod
-    def plot_flagged_sentences(flagged_sentences, title="Top Flagged Sentences by Bias Score"):
+    def plot_sentiment_distribution(dataframe, title="Sentiment Distribution"):
         """
-        Plot a horizontal bar chart for flagged sentences based on bias scores.
+        Plot a bar chart for sentiment distribution.
 
         Parameters:
-            flagged_sentences (list): List of dictionaries with keys `sentence` and `similarity`.
+            dataframe (pd.DataFrame): DataFrame containing a `sentiment` column.
             title (str): Title of the plot.
         """
-        sentences = [item["sentence"][:50] + "..." for item in flagged_sentences]
-        scores = [item["similarity"] for item in flagged_sentences]
+        sentiment_counts = dataframe["sentiment"].value_counts()
 
-        plt.figure(figsize=(10, 6))
-        plt.barh(sentences, scores, color="skyblue")
-        plt.xlabel("Bias Score")
+        plt.figure(figsize=(8, 6))
+        sns.barplot(x=sentiment_counts.index, y=sentiment_counts.values, palette="viridis")
+        plt.xlabel("Sentiment")
+        plt.ylabel("Count")
         plt.title(title)
-        plt.gca().invert_yaxis()
         plt.show()
 
     @staticmethod
-    def plot_flagged_vs_non_flagged(flagged_count, total_count, title="Flagged vs Non-Flagged Sentences"):
+    def plot_contextual_analysis_scores(dataframe, title="Contextual Analysis Scores"):
         """
-        Plot a pie chart for flagged vs. non-flagged sentences.
+        Plot a grouped bar chart for contextual analysis scores.
 
         Parameters:
-            flagged_count (int): Number of flagged sentences.
-            total_count (int): Total number of sentences.
+            dataframe (pd.DataFrame): DataFrame with contextual analysis score columns.
             title (str): Title of the plot.
         """
-        labels = ["Flagged", "Not Flagged"]
-        sizes = [flagged_count, total_count - flagged_count]
-        colors = ["red", "green"]
+        score_columns = [col for col in dataframe.columns if col.startswith("This sentence")]
+        scores = dataframe[score_columns].mean()
+
+        plt.figure(figsize=(10, 6))
+        sns.barplot(x=scores.index, y=scores.values, palette="mako")
+        plt.xlabel("Contextual Hypotheses")
+        plt.ylabel("Average Score")
+        plt.title(title)
+        plt.xticks(rotation=45, ha="right")
+        plt.show()
+
+    @staticmethod
+    def plot_sentences_by_sentiment_score(dataframe, title="Sentences by Sentiment Score"):
+        """
+        Plot a scatter plot of sentences based on sentiment scores.
+
+        Parameters:
+            dataframe (pd.DataFrame): DataFrame containing `sentiment_score` and `sentence`.
+            title (str): Title of the plot.
+        """
+        plt.figure(figsize=(10, 6))
+        plt.scatter(
+            dataframe["sentiment_score"], range(len(dataframe)),
+            color="blue", alpha=0.7
+        )
+        plt.xlabel("Sentiment Score")
+        plt.ylabel("Sentence Index")
+        plt.title(title)
+        plt.grid(True)
+        plt.show()
+
+    @staticmethod
+    def plot_final_contextual_analysis(dataframe, title="Final Contextual Analysis Distribution"):
+        """
+        Plot a pie chart for the distribution of final contextual analysis results.
+
+        Parameters:
+            dataframe (pd.DataFrame): DataFrame containing `final_contextual_analysis` column.
+            title (str): Title of the plot.
+        """
+        analysis_counts = dataframe["final_contextual_analysis"].value_counts()
 
         plt.figure(figsize=(8, 8))
-        plt.pie(sizes, labels=labels, autopct="%1.1f%%", startangle=90, colors=colors)
+        plt.pie(analysis_counts.values, labels=analysis_counts.index, autopct="%1.1f%%", startangle=90, colors=sns.color_palette("pastel"))
         plt.title(title)
-        plt.show()
-
-    @staticmethod
-    def plot_bias_vs_sentiment(dataframe, title="Bias Score vs Sentiment"):
-        """
-        Plot a scatter plot for bias scores vs sentiment scores.
-
-        Parameters:
-            dataframe (pd.DataFrame): DataFrame containing `bias_score` and `sentiment` columns.
-            title (str): Title of the plot.
-        """
-        plt.figure(figsize=(10, 6))
-        plt.scatter(dataframe["bias_score"], dataframe["sentiment"], color="blue", s=100)
-        plt.xlabel("Bias Score")
-        plt.ylabel("Sentiment Score")
-        plt.title(title)
-        plt.grid(True)
-        plt.show()
-
-    @staticmethod
-    def plot_flagged_bias_scores(dataframe, title="Flagged Bias Scores"):
-        """
-        Plot a bar chart for bias scores of flagged records.
-
-        Parameters:
-            dataframe (pd.DataFrame): DataFrame containing `bias_score` and flagged text.
-            title (str): Title of the plot.
-        """
-        plt.figure(figsize=(10, 6))
-        plt.bar(dataframe["id"], dataframe["bias_score"], color="purple")
-        plt.xlabel("Record ID")
-        plt.ylabel("Bias Score")
-        plt.title(title)
-        plt.grid(True)
-        plt.show()
-
-    @staticmethod
-    def plot_bias_categories(dataframe, title="Bias Categories in Flagged Records"):
-        """
-        Plot a grouped bar chart for bias categories.
-
-        Parameters:
-            dataframe (pd.DataFrame): DataFrame with bias category columns (`stereotypical`, `cultural`, etc.).
-            title (str): Title of the plot.
-        """
-        categories = ["stereotypical", "cultural", "representation", "contextual"]
-        category_counts = [dataframe[cat].sum() for cat in categories]
-
-        plt.figure(figsize=(10, 6))
-        sns.barplot(x=categories, y=category_counts, palette="viridis")
-        plt.ylabel("Number of Flagged Records")
-        plt.title(title)
-        plt.grid(axis="y")
         plt.show()
