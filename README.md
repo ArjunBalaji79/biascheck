@@ -72,7 +72,7 @@ from biascheck.analysis.moducheck import ModuCheck
 from langchain.llms import Ollama
 
 model = Ollama(model="llama3")
-topics = ["The role of women in leadership", "Cultural diversity"]
+topics = ["The role of gender in leadership", "Cultural diversity"]
 
 analyzer = ModuCheck(model=model, terms=["bias", "stereotype"], document="file.pdf")
 result = analyzer.analyze(topics=topics, num_responses=5)
@@ -98,7 +98,7 @@ visualiser.plot_bias_categories(flagged_records)
 ## **Setup Instructions**
 
 ### Prerequisites
-- Python 3.8 or above.
+- Python 3.10.10
 
 ### Installation
 
@@ -146,4 +146,3 @@ We welcome contributions! Please fork the repository, make your changes, and sub
 
 For questions, suggestions, or feedback, reach out to the project maintainer:
 - Name: Arjun Balaji
-- Email: arjun.balaji@gmail.com
