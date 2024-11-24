@@ -6,7 +6,7 @@ BiasCheck is a robust and modular Python library designed to analyze and detect 
 
 ## **Features**
 - **Modular Design**: BiasCheck offers modular and extensible classes for different bias analysis tasks.
-- **Bias Detection**: Analyze text, datasets, or language models for various types of bias.
+- **Bias Detection**: Analyze text, datasets, language models or databases for various types of bias.
 - **Support for RAG**: Automatically create Retrieval-Augmented Generation (RAG) pipelines using documents or PDFs.
 - **Sentiment Analysis**: Assess sentiment polarity alongside bias.
 - **Visualization**: Visualize flagged sentences and bias types in your analysis.
