@@ -58,7 +58,7 @@ print(flagged_df)
 
 ### **3. ModuCheck**
 
-Analyze bias in language model outputs and create RAG pipelines.
+Analyze bias in language model outputs.
 
 #### Key Features:
 - Supports HuggingFace, Ollama, and local GGUF models.
@@ -84,10 +84,10 @@ print(result)
 Analyze bias in RAG pipelines by combining document retrieval and natural language generation.
 
 ### Key Features:
-Builds Retrieval-Augmented Generation pipelines from documents or PDFs.
-Supports hypothesis-based contextual bias detection using NLI models.
-Integrates FAISS for vectorized document retrieval.
-Identifies bias in retrieved content and generated outputs.
+- Builds Retrieval-Augmented Generation pipelines from documents or PDFs.
+- Supports hypothesis-based contextual bias detection using NLI models.
+- Integrates FAISS for vectorized document retrieval.
+- Identifies bias in retrieved content and generated outputs.
 
 #### Example:
 ```python
@@ -118,13 +118,12 @@ visualiser = Visualiser()
 visualiser.plot_bias_categories(flagged_records)
 ```
 
-### **6. `BaseCheck`**
-The foundational class for all bias-checking modules.
+### **6. BaseCheck** (under construction)
+Analyze bias in databases similar to the rest of the library.
 
 #### Key Features:
-- Provides shared utility methods for bias detection.
-- Implements common pre-processing techniques like tokenization, term matching, and contextual analysis.
-- Acts as a parent class for other bias-check
+- Database Compatibility: Supports both vector databases (e.g., FAISS) and graph databases (e.g., Neo4j).
+- Saves flagged outputs and bias results to a DataFrame.
 
 ## **Setup Instructions**
 
