@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+
 from ..utils.embed_utils import Embedder
 from ..utils.terms_loader import load_terms, preprocess_text
 from sklearn.metrics.pairwise import cosine_similarity

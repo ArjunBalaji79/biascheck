@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+
 import pandas as pd
 from langchain.chains import RetrievalQA
 from langchain.vectorstores import FAISS

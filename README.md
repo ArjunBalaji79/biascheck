@@ -10,6 +10,7 @@ BiasCheck is a robust and modular Python library designed to analyze and detect 
 - **Support for RAG**: Automatically create Retrieval-Augmented Generation (RAG) pipelines using documents or PDFs.
 - **Sentiment Analysis**: Assess sentiment polarity alongside bias.
 - **Visualization**: Visualize flagged sentences and bias types in your analysis.
+- **Report Generation**: Generate detailed text and JSON reports from analysis results.
 
 ---
 
@@ -124,6 +125,25 @@ Analyze bias in databases similar to the rest of the library.
 #### Key Features:
 - Database Compatibility: Supports both vector databases (e.g., FAISS) and graph databases (e.g., Neo4j).
 - Saves flagged outputs and bias results to a DataFrame.
+
+### **7. ReportGenerator**
+
+Generate comprehensive reports from analysis results.
+
+#### Key Features:
+- Creates detailed text reports with summary statistics and sample records.
+- Generates JSON reports for programmatic analysis.
+- Handles results from all BiasCheck analyzers (DocuCheck, SetCheck, ModuCheck, RAGCheck).
+
+#### Example:
+```python
+from biascheck.analysis.report_generator import ReportGenerator
+
+# Assuming 'result' is a DataFrame from any BiasCheck analyzer
+report_generator = ReportGenerator(result)
+text_report_path = report_generator.generate_text_report()
+json_report_path = report_generator.generate_json_report()
+```
 
 ## **Setup Instructions**
 

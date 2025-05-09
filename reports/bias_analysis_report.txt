@@ -1,0 +1,50 @@
+BiasCheck Analysis Report
+=========================
+
+Summary Statistics:
+-------------------
+Total Records: 6
+Sentiment Distribution:
+  - LABEL_2: 6
+Contextual Hypothesis Distribution:
+  - Neutral/Unclear: 6
+Average Bias Score: 0.25405341386795044
+
+Detailed Records (Sample - First 10 or fewer if less data):
+----------------------------------------------------------
+
+Record 1:
+  Text:  Achieving gender equality in leadership requires breaking down biases, promoting equal opportunities, and encouraging inclusive work environments. Let's close the gap and harness the full potential of diverse leadership. #EqualityForAll #GenderEquity #LeadWithDignity
+  Sentiment: LABEL_2 (Score: 0.85)
+  Bias/Similarity Score: 0.29
+  Final Contextual Hypothesis: Neutral/Unclear
+
+Record 2:
+  Text:  Achieving gender equality in leadership involves breaking down biases, promoting equal opportunities, and encouraging diversity through policies, education, and cultural shifts. It benefits organizations by increasing creativity, innovation, and improved decision-making.
+  Sentiment: LABEL_2 (Score: 0.90)
+  Bias/Similarity Score: 0.28
+  Final Contextual Hypothesis: Neutral/Unclear
+
+Record 3:
+  Text:  Achieving gender equality in leadership requires breaking down biases, promoting equal opportunities, and encouraging female participation through mentoring, sponsorship, and inclusive policies. #EqualRepresentation #GenderEquality.
+  Sentiment: LABEL_2 (Score: 0.73)
+  Bias/Similarity Score: 0.28
+  Final Contextual Hypothesis: Neutral/Unclear
+
+Record 4:
+  Text:  Cultural diversity refers to the richness of various ethnic groups, beliefs, traditions, and languages within a society. It enriches communities by promoting respect, understanding, and inclusiveness. Embracing diversity enhances social cohesion and global harmony.
+  Sentiment: LABEL_2 (Score: 0.86)
+  Bias/Similarity Score: 0.23
+  Final Contextual Hypothesis: Neutral/Unclear
+
+Record 5:
+  Text:  Cultural diversity refers to the richness of various ethnic groups, languages, and traditions coexisting within a society. It promotes understanding, respect, and inclusion, enriching our world with unique perspectives and experiences.
+  Sentiment: LABEL_2 (Score: 0.90)
+  Bias/Similarity Score: 0.23
+  Final Contextual Hypothesis: Neutral/Unclear
+
+Record 6:
+  Text:  Cultural diversity refers to the presence and celebration of differences among various ethnic groups, including language, customs, beliefs, and traditions. It enriches societies by fostering understanding, respect, and innovation.
+  Sentiment: LABEL_2 (Score: 0.77)
+  Bias/Similarity Score: 0.22
+  Final Contextual Hypothesis: Neutral/Unclear
